@@ -1,10 +1,10 @@
 {
-  "name": "plugin-template",
-  "version": "0.0.0",
-  "description": "template for mu plugins",
+  "name": "mu-sss",
+  "version": "0.0.1",
+  "description": "plug-in for shamir secret sharing",
   "main": "build/index.js",
-  "repository": "https://github.com/Mu-Methods/plugin-template.git",
-  "author": "Mu Methods (frankiebee)",
+  "repository": "https://github.com/Mu-Methods/mu-sss.git",
+  "author": "Mu Methods (ReneeSauce)",
   "scripts": {
     "compile": "tsc",
     "test": "yarn compile && node tests/index.js"
@@ -14,5 +14,8 @@
     "@types/node": "^18.11.9",
     "tape": "^5.6.1",
     "typescript": "^4.9.3"
+  },
+  "dependencies": {
+    "mu-shamir": "^0.0.1"
   }
 }
