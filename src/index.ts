@@ -66,7 +66,7 @@ async function requestShards (api:object, recipients:Array<string>):Promise<bool
   await Promise.all(recipients.map((key:string) => {
     if (!key) return
 
-    request = {type: 'request', text: 'shard requested'}
+    const request = {type: 'request', text: 'shard requested'}
     const cipher = api.keys(request, key)
     return new Promise((res, rej) => {
       api.db.create({content: cipher}, (err, result) => {
@@ -93,6 +93,7 @@ async function resendShards (api:object, recipient:string):Promise<boolean> {
       )
     ),
     toCallback((err, msgs) => {
+      if (err) rej(err)
       return msgs
     })
   )

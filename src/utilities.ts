@@ -5,19 +5,19 @@ module.exports = {
   hexStringToShare
 }
 
-function stringToBigInt (str: string):bigInt {
+function stringToBigInt (str: string):bigint {
   return BigInt(`0x${Buffer.from(str).toString('hex')}`)
 }
 
-function bigintToHexString (b: bigInt):string {
+function bigintToHexString (b: bigint):string {
   let str = b.toString(16)
-  if (str % 2 !== 0) {
+  if (str.length % 2 !== 0) {
     str = '0' + str
   }
   return '0x' + str
 }
 
-function bigintToAscii (b: bigInt):string {
+function bigintToAscii (b: bigint):string {
   return Buffer.from(b.toString(16), 'hex').toString('utf8')
 }
 
@@ -35,11 +35,11 @@ function shareToHexString(share:tPoint):string {
   return '0x' + x + y
 }
 
-type tPoint = [bigint, bigint]
-
 function hexStringToShare(str: string):tPoint  {
-  if (str[0] !== '0' || str[1]!== 'x') return
-  const x = BigInt(string.slice(0, 5))
-  const y = stringToBigInt('0x' + string.slice(5))
+  if (str[0] !== '0' || str[1]!== 'x') {
+    throw new Error('bad hex string')
+  }
+  const x = BigInt(str.slice(0, 5))
+  const y = stringToBigInt('0x' + str.slice(5))
   return [x, y]
 }
