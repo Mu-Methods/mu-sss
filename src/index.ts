@@ -3,8 +3,11 @@ const {
   bigintToAscii,
   shareToHexString,
   hexStringToShare
-} = require('./utilities.js')
+} = require('./utilities')
+const { API, DB } = require('./types')
+const {where, and, type, toCallback} = require('ssb-db2/operators')
 const muShamir = require('mu-shamir')
+
 
 export const name = 'mu-sss'
 export const version = '0.0.1'
@@ -21,7 +24,7 @@ export const manifest = {
 
 type tPoint = [bigint, bigint]
 
-export const init = (api:object) => {  
+export const init = (api:API) => {  
   return {
     shardAndSend: shardAndSend.bind(null, api),
     requestShards: requestShards.bind(null, api),
@@ -31,7 +34,7 @@ export const init = (api:object) => {
 
 //default behavior: shares secret with given threshold and sends ith share to ith recipient.
 //default threshold is the number of recipients.
-async function shardAndSend (api:object, secret: string, recipients: Array<string>, threshold: number = recipients.length, ordered:boolean=false): Promise<boolean> {
+async function shardAndSend (api:API, secret: string, recipients: Array<string>, threshold: number = recipients.length, ordered:boolean=false): Promise<boolean> {
   // Assumes secret is a string
   // convert secret to hex string to bigint 
   // shard secret hex
@@ -62,7 +65,7 @@ async function shardAndSend (api:object, secret: string, recipients: Array<strin
   return true
 }
 
-async function requestShards (api:object, recipients:Array<string>):Promise<boolean> {
+async function requestShards (api:API, recipients:Array<string>):Promise<boolean> {
   await Promise.all(recipients.map((key:string) => {
     if (!key) return
 
@@ -79,13 +82,14 @@ async function requestShards (api:object, recipients:Array<string>):Promise<bool
     })
 
   }))
+  return true
 }
 
 
 //given a request-message resend the right shard back
 //need: the shard-message in reference.
-async function resendShards (api:object, recipient:string):Promise<boolean> {
-  const shards = api.db.query(
+async function resendShards (api:API, recipient:string):Promise<boolean> {
+  const shards = await.api.db.query(
     where(
       and(
         type('shard'),
@@ -94,7 +98,7 @@ async function resendShards (api:object, recipient:string):Promise<boolean> {
     ),
     toCallback((err, msgs) => {
       if (err) rej(err)
-      return msgs
+      res(msgs)
     })
   )
 
@@ -112,9 +116,10 @@ async function resendShards (api:object, recipient:string):Promise<boolean> {
     })
 
   }))
+  return true
 }
 
-async function recoverAccount(shareHolders:Array<string>, recipient) {
+async function recoverAccount(api: API, shareHolders:Array<string>, recipient) {
   const shares:Array<tPoint> = []
   await Promise.all(shareHolders.map(key => {
     if (!key) return
@@ -131,7 +136,7 @@ async function recoverAccount(shareHolders:Array<string>, recipient) {
       })
     )
 
-    shards.forEach(shard => {
+    shards.forEach((shard: object) => {
       shares.push(hexStringToShare(shard.content.text))
     })
     const recovered = muShamir.recover(shares)
@@ -148,4 +153,5 @@ async function recoverAccount(shareHolders:Array<string>, recipient) {
     })
 
   })) 
+  return true
 }
