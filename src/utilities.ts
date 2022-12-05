@@ -1,3 +1,5 @@
+import { API } from './types'
+
 module.exports = {
   stringToBigInt,
   bigintToAscii,
@@ -5,15 +7,19 @@ module.exports = {
   hexStringToShare
 }
 
-async function send(msg:any, key:string):Promise<boolean> {
-  const cipher = api.keys.box(msg, key)
-  await api.db.create({content: cipher}, (err: Error | string | underfined, result) => {
-        if (err) {
-          rej(err)
-        } else {
-          res(result)
-        }
+async function send(api:API, msg:any, recipent:string):Promise<boolean> {
+  await new Promise((res, rej) => {
+    try {
+      api.keys.box(msg, recipent).then(value => {
+        api.db.create({content: value}, (err, msg) => {
+          if (msg) res(res(msg))
+        })
       })
+
+    } catch (e) {
+      rej(e)
+    }
+  })
   return true
 }
 

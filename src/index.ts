@@ -3,7 +3,8 @@ const {
   stringToBigInt,
   bigintToAscii,
   shareToHexString,
-  hexStringToShare
+  hexStringToShare,
+  send,
 } = require('./utilities')
 const {where, and, type, toPromise} = require('ssb-db2/operators')
 const muShamir = require('mu-shamir')
@@ -36,53 +37,33 @@ export const init = (api:API) => {
 
 //default behavior: shares secret with given threshold and sends ith share to ith recipient.
 //default threshold is the number of recipients.
-async function shardAndSend (api:API, secret: string, recipients: Array<string>, threshold: number = recipients.length, ordered:boolean=false): Promise<boolean> {
-  // Assumes secret is a string
-  // convert secret to hex string to bigint 
-  // shard secret hex
-  let shares:Array<tPoint> = []
-  if (ordered === false) {
-    shares = muShamir.share(stringToBigInt(secret), threshold)
-  } else {
-    shares = muShamir.randomShare(stringToBigInt(secret), threshold)
-  }
-  // "send" shards to recipients
-  await Promise.all(recipients.map((key, index) => {
-    if (!key) return
-    let shard = {type: 'shard', text: shareToHexString(shares[index])}
-    // encrypt message
-    const cipher = api.keys.box(shard, key)
-    // publish message
-    return new Promise(async (res, rej) => {
-      api.db.create({content: cipher}, (err: Error | string | underfined, result) => {
-        if (err) {
-          rej(err)
-        } else {
-          res(result)
-        }
-      })
 
-    })
-  }))
+async function shardAndSend(
+  api: API,
+  secret: string,
+  recipients: Array<string>,
+  threshold: number = recipients.length,
+  randomize?:boolean
+  ): Promise<boolean> {
+  num = stringToBigInt(secret)
+  if (randomize) {
+    const shares = muShamir.randomShare(num, threshold, recipients.length)
+  } else {
+    const shares = muShamir.share(num, threshold, recipients.length)
+  }
+
+  await Promise.all(recipients.map(async (key, index) => {
+    await send(api, shares[index], key)
+  }).map((f) => { return f() }))
   return true
 }
 
 async function requestShards (api:API, recipients:Array<string>):Promise<boolean> {
-  await Promise.all(recipients.map((key:string) => {
-    if (!key) return
+  await Promise.all(recipients.map(async (recipent:string) => {
+    if (!recipent) return
 
     const request = {type: 'request', text: 'shard requested'}
-    const cipher = api.keys(request, key)
-    return new Promise((res, rej) => {
-      api.db.create({content: cipher}, (err, result) => {
-        if (err) {
-          rej(err)
-        } else {
-          res(result)
-        }
-      })
-    })
-
+    await send(request, recipent)
   }))
   return true
 }
@@ -99,76 +80,35 @@ async function resendShards (api:API, recipient:string):Promise<boolean> {
         author(recipient)
       )
     ),
-    toPromise((err, msgs) => {
-      if (err) rej(err)
-      res(msgs)
-    })
+    toPromise()
   )
 
-  await Promise.all(shards.map((shard) => {
+  await Promise.all(shards.map(async (shard) => {
     const resend = { type:'unshard', shard}
-    const cipher = api.keys(resend, recipient)
-    return new Promise((res, rej) => {
-      api.db.create({content: cipher}, (err, result) => {
-        if (err) {
-          rej(err)
-        } else {
-          res(result)
-        }
-      })
-    })
-
-  }))
+    await send(api, resend, recipent)
+  }).map((f) => { return f() }))
   return true
 }
 
 async function recoverAccount(api: API, shareHolders:Array<string>, recipient) {
   const shares:Array<tPoint> = []
-  await Promise.all(shareHolders.map(key => {
+  await Promise.all(shareHolders.map(async (key) => {
     if (!key) return
 
-    api.db.query(
+    const msgs = await api.db.query(
       where(
         and(
           type('unshard'),
           author(key)
         )
       ),
-      toPromise((err, msgs) => {
-        msgs.forEach((shard: object) => {
-      shares.push(hexStringToShare(shard.content.text))
-    })
-    const recovered = muShamir.recover(shares)
-    //encrypt to self?
-    const cipher = api.keys(bigintToAscii(muShamir.recover(shares), recipient))
-    return new Promise((res, rej) => {
-      api.db.create({content: cipher}, (err, result) => {
-        if (err) {
-          rej(err)
-        } else {
-          res(result)
-        }
-      })
-    })
-      })
+      toPromise(),
     )
-
-    shards.forEach((shard: object) => {
-      shares.push(hexStringToShare(shard.content.text))
+    msgs.forEach((msg) => {
+      if (!msg.content) return
+      shares.push(msg.content.text)
     })
-    const recovered = muShamir.recover(shares)
-    //encrypt to self?
-    const cipher = api.keys(bigintToAscii(muShamir.recover(shares), recipient))
-    return new Promise((res, rej) => {
-      await api.db.create({content: cipher}, (err, result) => {
-        if (err) {
-          rej(err)
-        } else {
-          res(result)
-        }
-      })
-    })
+  }).map((f) => { return f() }))
+  const recovered = muShamir.recover(shares)
 
-  })) 
-  return true
 }
