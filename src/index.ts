@@ -1,12 +1,11 @@
-import { API } from './types'
+import { API, Message } from './types'
 const { 
   stringToBigInt,
-  bigintToAscii,
-  shareToHexString,
-  hexStringToShare,
   send,
+  shareToHexString,
+  hexStringToShare
 } = require('./utilities')
-const {where, and, type, toPromise} = require('ssb-db2/operators')
+const {where, and, type, author, toPromise} = require('ssb-db2/operators')
 const muShamir = require('mu-shamir')
 
 
@@ -45,16 +44,22 @@ async function shardAndSend(
   threshold: number = recipients.length,
   randomize?:boolean
   ): Promise<boolean> {
-  num = stringToBigInt(secret)
+  const num = stringToBigInt(secret)
+  let shares:Array<tPoint>
   if (randomize) {
-    const shares = muShamir.randomShare(num, threshold, recipients.length)
+    shares = muShamir.randomShare(num, threshold, recipients.length)
   } else {
-    const shares = muShamir.share(num, threshold, recipients.length)
+    shares = muShamir.share(num, threshold, recipients.length)
   }
 
-  await Promise.all(recipients.map(async (key, index) => {
-    await send(api, shares[index], key)
-  }).map((f) => { return f() }))
+  shares = shares.map((share) => {
+    return shareToHexString(share)
+  })
+  const map: Array<Promise<boolean>> = recipients.map(async (key, index): Promise<boolean> => {
+    return await send(api, shares[index], key)
+  })
+
+  await Promise.all(map)
   return true
 }
 
@@ -63,7 +68,7 @@ async function requestShards (api:API, recipients:Array<string>):Promise<boolean
     if (!recipent) return
 
     const request = {type: 'request', text: 'shard requested'}
-    await send(request, recipent)
+    await send(api, request, recipent)
   }))
   return true
 }
@@ -82,15 +87,14 @@ async function resendShards (api:API, recipient:string):Promise<boolean> {
     ),
     toPromise()
   )
-
-  await Promise.all(shards.map(async (shard) => {
-    const resend = { type:'unshard', shard}
-    await send(api, resend, recipent)
-  }).map((f) => { return f() }))
+  await Promise.all(shards.map(async (shard:string) => {
+    const resend = { type:'request', shard}
+    await send(api, resend, recipient)
+  }))
   return true
 }
 
-async function recoverAccount(api: API, shareHolders:Array<string>, recipient) {
+async function recoverAccount(api: API, shareHolders:Array<string>) {
   const shares:Array<tPoint> = []
   await Promise.all(shareHolders.map(async (key) => {
     if (!key) return
@@ -98,17 +102,16 @@ async function recoverAccount(api: API, shareHolders:Array<string>, recipient) {
     const msgs = await api.db.query(
       where(
         and(
-          type('unshard'),
+          type('request'),
           author(key)
         )
       ),
       toPromise(),
     )
-    msgs.forEach((msg) => {
+    msgs.forEach((msg:Message) => {
       if (!msg.content) return
-      shares.push(msg.content.text)
+      shares.push(hexStringToShare(msg.content.text))
     })
-  }).map((f) => { return f() }))
-  const recovered = muShamir.recover(shares)
-
+  }))
+  return muShamir.recover(shares)
 }

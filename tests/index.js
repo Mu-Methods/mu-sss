@@ -1,6 +1,20 @@
 const test = require('tape')
 const plugin = require('../build')
 
+const stub = {
+  db: {
+    create() {
+
+    },
+    query() {
+
+    },
+  },
+  keys: {
+    
+  }
+}
+
 test('should have exist and qualify spec', async (t) => {
   t.plan(5)
   console.log('plugin', plugin)

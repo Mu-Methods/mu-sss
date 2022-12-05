@@ -10,12 +10,18 @@
 // import * as ssbKeysTypes from 'ssb-keys'
 
 export interface DB {
-  [key: string]: Promise<boolean>
+  create: Function;
+  query: Function;
 }
 
 export interface API {
   db: DB;
   keys: any;
+}
+
+interface Content {
+  type: string;
+  text: string;
 }
 
 export interface Message {
@@ -24,6 +30,6 @@ export interface Message {
   hash: string;
   nonce: number | string;
   timestamp: number;
-  content: any; // correct me
+  content: Content;
   signature: string;
 }

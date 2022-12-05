@@ -4,15 +4,18 @@ module.exports = {
   stringToBigInt,
   bigintToAscii,
   shareToHexString,
-  hexStringToShare
+  hexStringToShare,
+  bigintToHexString,
+  send
 }
 
 async function send(api:API, msg:any, recipent:string):Promise<boolean> {
   await new Promise((res, rej) => {
     try {
-      api.keys.box(msg, recipent).then(value => {
-        api.db.create({content: value}, (err, msg) => {
-          if (msg) res(res(msg))
+      api.keys.box(msg, recipent).then((value:string) => {
+        api.db.create({content: value}, (err:any, msg:any) => {
+          if (err) rej(err)
+          if (msg) res(msg)
         })
       })
 
