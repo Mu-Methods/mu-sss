@@ -1,11 +1,11 @@
+import { API } from './types'
 const { 
   stringToBigInt,
   bigintToAscii,
   shareToHexString,
   hexStringToShare
 } = require('./utilities')
-const { API, DB } = require('./types')
-const {where, and, type, toCallback} = require('ssb-db2/operators')
+const {where, and, type, toPromise} = require('ssb-db2/operators')
 const muShamir = require('mu-shamir')
 
 
@@ -15,7 +15,8 @@ export const version = '0.0.1'
 export const manifest = {
   shardAndSend,
   requestShards,
-  resendShards
+  resendShards,
+  recoverAccount
 }
 
 /**
@@ -29,6 +30,7 @@ export const init = (api:API) => {
     shardAndSend: shardAndSend.bind(null, api),
     requestShards: requestShards.bind(null, api),
     resendShards: resendShards.bind(null, api),
+    recoverAccount: recoverAccount.bind(null, api)
   }
 }
 
@@ -51,8 +53,8 @@ async function shardAndSend (api:API, secret: string, recipients: Array<string>,
     // encrypt message
     const cipher = api.keys.box(shard, key)
     // publish message
-    return new Promise((res, rej) => {
-      api.db.create({content: cipher}, (err, result) => {
+    return new Promise(async (res, rej) => {
+      api.db.create({content: cipher}, (err: Error | string | underfined, result) => {
         if (err) {
           rej(err)
         } else {
@@ -88,15 +90,16 @@ async function requestShards (api:API, recipients:Array<string>):Promise<boolean
 
 //given a request-message resend the right shard back
 //need: the shard-message in reference.
+//when returning a Promise<boolean> use a try-catch,
 async function resendShards (api:API, recipient:string):Promise<boolean> {
-  const shards = await.api.db.query(
+  const shards = await api.db.query(
     where(
       and(
         type('shard'),
         author(recipient)
       )
     ),
-    toCallback((err, msgs) => {
+    toPromise((err, msgs) => {
       if (err) rej(err)
       res(msgs)
     })
@@ -124,15 +127,29 @@ async function recoverAccount(api: API, shareHolders:Array<string>, recipient) {
   await Promise.all(shareHolders.map(key => {
     if (!key) return
 
-    const shards = api.db.query(
+    api.db.query(
       where(
         and(
           type('unshard'),
           author(key)
         )
       ),
-      toCallback((err, msgs) => {
-        return msgs
+      toPromise((err, msgs) => {
+        msgs.forEach((shard: object) => {
+      shares.push(hexStringToShare(shard.content.text))
+    })
+    const recovered = muShamir.recover(shares)
+    //encrypt to self?
+    const cipher = api.keys(bigintToAscii(muShamir.recover(shares), recipient))
+    return new Promise((res, rej) => {
+      api.db.create({content: cipher}, (err, result) => {
+        if (err) {
+          rej(err)
+        } else {
+          res(result)
+        }
+      })
+    })
       })
     )
 
@@ -143,7 +160,7 @@ async function recoverAccount(api: API, shareHolders:Array<string>, recipient) {
     //encrypt to self?
     const cipher = api.keys(bigintToAscii(muShamir.recover(shares), recipient))
     return new Promise((res, rej) => {
-      api.db.create({content: cipher}, (err, result) => {
+      await api.db.create({content: cipher}, (err, result) => {
         if (err) {
           rej(err)
         } else {

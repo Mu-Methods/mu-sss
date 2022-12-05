@@ -5,6 +5,18 @@ module.exports = {
   hexStringToShare
 }
 
+async function send(msg:any, key:string):Promise<boolean> {
+  const cipher = api.keys.box(msg, key)
+  await api.db.create({content: cipher}, (err: Error | string | underfined, result) => {
+        if (err) {
+          rej(err)
+        } else {
+          res(result)
+        }
+      })
+  return true
+}
+
 function stringToBigInt (str: string):bigint {
   return BigInt(`0x${Buffer.from(str).toString('hex')}`)
 }
