@@ -13,10 +13,10 @@ export const name = 'mu-sss'
 export const version = '0.0.1'
 
 export const manifest = {
-  shardAndSend,
-  requestShards,
-  resendShards,
-  recoverAccount
+  shardAndSend: 'async',
+  requestShards: 'async',
+  resendShards: 'async',
+  recoverAccount: 'async',
 }
 
 /**
@@ -42,11 +42,11 @@ async function shardAndSend(
   secret: string,
   recipients: Array<string>,
   threshold: number = recipients.length,
-  randomize?:boolean
+  dontRandomize?:boolean
   ): Promise<boolean> {
   const num = stringToBigInt(secret)
   let shares:Array<tPoint>
-  if (randomize) {
+  if (!dontRandomize) {
     shares = muShamir.randomShare(num, threshold, recipients.length)
   } else {
     shares = muShamir.share(num, threshold, recipients.length)
@@ -94,7 +94,7 @@ async function resendShards (api:API, recipient:string):Promise<boolean> {
   return true
 }
 
-async function recoverAccount(api: API, shareHolders:Array<string>) {
+async function recoverAccount(api: API, shareHolders:Array<string>): Promise<bigint> {
   const shares:Array<tPoint> = []
   await Promise.all(shareHolders.map(async (key) => {
     if (!key) return

@@ -12,11 +12,10 @@ module.exports = {
 async function send(api:API, msg:any, recipent:string):Promise<boolean> {
   await new Promise((res, rej) => {
     try {
-      api.keys.box(msg, recipent).then((value:string) => {
-        api.db.create({content: value}, (err:any, msg:any) => {
-          if (err) rej(err)
-          if (msg) res(msg)
-        })
+      const value = api.keys.box(msg, [recipent])
+      api.db.create({content: value}, (err:any, msg:any) => {
+        if (err) rej(err)
+        if (msg) res(msg)
       })
 
     } catch (e) {
@@ -27,6 +26,7 @@ async function send(api:API, msg:any, recipent:string):Promise<boolean> {
 }
 
 function stringToBigInt (str: string):bigint {
+  console.log('STR!!!!!!', str)
   return BigInt(`0x${Buffer.from(str).toString('hex')}`)
 }
 
