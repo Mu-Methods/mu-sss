@@ -19,8 +19,8 @@ function createStubsAndSetup () {
      cb(undefined, msg)
    },
    query: (...params) => {
-     console.log(params)
-     return returnDataStub[query]
+     console.log('!!!!!', params)
+     return returnDataStub.query
    }
  }
  const api = {
@@ -49,6 +49,7 @@ test('should have exist and qualify spec', async (t) => {
   returnDataStub.db.feed = []
   await sss.shardAndSend('hello world', recipents, 2)
   t.pass('did not fail at shard and send')
+  returnDataStub.query = []
   const result = await sss.recoverAccount(api, recipents)
   t.equal('hello world', util.bigintToAscii(result), 'should return secret from db')
 })
