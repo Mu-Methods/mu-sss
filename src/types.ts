@@ -12,6 +12,7 @@
 export interface DB {
   create: Function;
   query: Function;
+  feed: Array<Message>
 }
 
 export interface API {

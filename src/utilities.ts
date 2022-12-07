@@ -6,14 +6,20 @@ module.exports = {
   shareToHexString,
   hexStringToShare,
   bigintToHexString,
-  send
+  send,
+  logger
 }
 
-async function send(api:API, msg:any, recipent:string):Promise<boolean> {
+function logger(x:any, name:string, line:number) {
+  console.log(name + ' at line ' + line + ':')
+  console.log(x)
+}
+
+async function send(api:API, sender:string, msg:any, recipient:string):Promise<boolean> {
   await new Promise((res, rej) => {
     try {
-      const value = api.keys.box(msg, [recipent])
-      api.db.create({content: value}, (err:any, msg:any) => {
+      const value = api.keys.box(msg, [recipient])
+      api.db.create({author: sender, content: value}, (err:any, msg:any) => {
         if (err) rej(err)
         if (msg) res(msg)
       })
@@ -26,7 +32,6 @@ async function send(api:API, msg:any, recipent:string):Promise<boolean> {
 }
 
 function stringToBigInt (str: string):bigint {
-  console.log('STR!!!!!!', str)
   return BigInt(`0x${Buffer.from(str).toString('hex')}`)
 }
 
