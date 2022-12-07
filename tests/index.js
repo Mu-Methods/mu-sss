@@ -11,7 +11,7 @@ const dylan = keys.generate()
 const {createStubsAndSetup} = require('./stub.js')
 
 test('should have exist and qualify spec', async (t) => {
-  t.plan(7)
+  t.plan(8)
   console.log('plugin', plugin)
   t.ok(plugin, 'plugin is exported')
   t.ok(plugin.name, 'plugin has a name')
@@ -23,7 +23,6 @@ test('should have exist and qualify spec', async (t) => {
   const recipients = [bob, charlie, dylan]
   const { returnDataStub, api, sss } = createStubsAndSetup()
   const feedMe = () => console.log('feed start', returnDataStub.db.feed, 'feed end')
-  console.log('!!!!!stub creation successful')
   returnDataStub.db.feed = []
   await sss.shardAndSend(alice, 'hello world', recipients)
   t.pass('did not fail at shard and send')
@@ -33,7 +32,5 @@ test('should have exist and qualify spec', async (t) => {
   })
   const result = await sss.recoverAccount(alice, recipients)
   const returnedSecret = util.bigintToAscii(result)
-  console.log('in test, original', util.stringToBigInt('hello world'))
-  console.log('in test, result', result)
   t.equal('hello world', returnedSecret, 'should return secret from db')
 })
