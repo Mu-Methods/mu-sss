@@ -1,4 +1,4 @@
-import { API } from './types'
+import { API, ID } from './types'
 
 module.exports = {
   stringToBigInt,
@@ -15,11 +15,11 @@ function logger(x:any, name:string, line:number) {
   console.log(x)
 }
 
-async function send(api:API, sender:string, msg:any, recipient:string):Promise<boolean> {
+async function send(api:API, sender:ID, msg:any, recipient:ID):Promise<boolean> {
   await new Promise((res, rej) => {
     try {
       const value = api.keys.box(msg, [recipient])
-      api.db.create({author: sender, content: value}, (err:any, msg:any) => {
+      api.db.create({author: sender.public, content: value}, (err:any, msg:any) => {
         if (err) rej(err)
         if (msg) res(msg)
       })
@@ -65,7 +65,7 @@ function hexStringToShare(str: string):tPoint  {
   if (str[0] !== '0' || str[1]!== 'x') {
     throw new Error('bad hex string')
   }
-  const x = BigInt(str.slice(0, 5))
-  const y = stringToBigInt('0x' + str.slice(5))
+  const x = BigInt(str.slice(0, 4))
+  const y = stringToBigInt('0x' + str.slice(4))
   return [x, y]
 }

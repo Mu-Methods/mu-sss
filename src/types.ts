@@ -25,6 +25,13 @@ interface Content {
   text: string;
 }
 
+export interface ID {
+  curve: string,
+  public: string,
+  private: string,
+  id: string,
+}
+
 export interface Message {
   author: string;
   backlink: string;

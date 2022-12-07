@@ -1,12 +1,12 @@
-import { API, Message } from './types'
+import { API, Message, ID } from './types'
 const { 
   stringToBigInt,
   send,
   shareToHexString,
-  hexStringToShare,
-  logger
+  hexStringToShare
+  //logger
 } = require('./utilities')
-const {where, and, type, author, toPromise} = require('ssb-db2/operators')
+//const {where, and, type, author, toPromise} = require('ssb-db2/operators')
 const muShamir = require('mu-shamir')
 
 
@@ -40,9 +40,9 @@ export const init = (api:API) => {
 
 async function shardAndSend(
   api: API,
-  sender: string,
+  sender: ID,
   secret: string,
-  recipients: Array<string>,
+  recipients: Array<ID>,
   threshold: number = recipients.length,
   dontRandomize?:boolean
   ): Promise<boolean> {
@@ -53,19 +53,18 @@ async function shardAndSend(
   } else {
     shares = muShamir.share(num, threshold, recipients.length)
   }
-
-  shares = shares.map((share) => {
-    return shareToHexString(share)
+  const shards = shares.map((share) => {
+    return {type: 'shard', text: shareToHexString(share)}
   })
-  const map: Array<Promise<boolean>> = recipients.map(async (key, index): Promise<boolean> => {
-    return await send(api, sender, shares[index], key)
+  const map: Array<Promise<boolean>> = recipients.map(async (recipient, index): Promise<boolean> => {
+    return await send(api, sender, shards[index], recipient)
   })
   await Promise.all(map)
   return true
 }
 
-async function requestShards (api:API, sender:string, recipients:Array<string>):Promise<boolean> {
-  await Promise.all(recipients.map(async (recipent:string) => {
+async function requestShards (api:API, sender:ID, recipients:Array<ID>):Promise<boolean> {
+  await Promise.all(recipients.map(async (recipent:ID) => {
     if (!recipent) return
 
     const request = {type: 'request', text: 'shard requested'}
@@ -78,39 +77,20 @@ async function requestShards (api:API, sender:string, recipients:Array<string>):
 //given a request-message resend the right shard back
 //need: the shard-message in reference.
 //when returning a Promise<boolean> use a try-catch,
-async function resendShards (api:API, sender:string, recipient:string):Promise<boolean> {
-  const shards:Array<string> = []
-  await api.db.feed.forEach((msg) => {
-    if (msg.author === recipient)
-      shards.push(api.keys.unbox(msg.content))
-  })
-  await Promise.all(shards.map(async (shard:string) => {
-    const resend = { type:'request', shard}
+async function resendShards (api:API, sender:ID, recipient:ID):Promise<boolean> {
+  let shards = api.db.query(sender, 'shard')
+  await Promise.all(shards.map(async (shard:Message) => {
+    const resend = shard.content
+    resend.type = 'recovery'
     await send(api, sender, resend, recipient)
   }))
   return true
 }
 
-async function recoverAccount(api: API, recipients:Array<string>): Promise<bigint> {
-  const shares:Array<tPoint> = []
-  await Promise.all(recipients.map(async (key) => {
-    if (!key) return
-
-    const msgs = await api.db.query(
-      where(
-        and(
-          type('request'),
-          author(key)
-        )
-      ),
-      toPromise()
-    )
-  logger(msgs, 'msgs', 111)
-    msgs.forEach((msg:Message) => {
-      if (!msg.content) return
-      shares.push(hexStringToShare(msg.content.text))
-    })
-  }))
-  logger(shares, 'shares', 116)
+async function recoverAccount(api: API, sender:ID): Promise<bigint> {
+  let shares:Array<Message> = await api.db.query(sender, 'recovery')
+  shares = shares.map((msg:Message) => {
+    return hexStringToShare(msg.content.text)
+  })
   return muShamir.recover(shares)
 }
