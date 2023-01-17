@@ -57,7 +57,7 @@ async function shardAndSend(
     return {type: 'shard', text: shareToHexString(share)}
   })
   const map: Array<Promise<boolean>> = recipients.map(async (recipient, index): Promise<boolean> => {
-    return await send(api, sender, shards[index], recipient)
+    return await send(api, sender, shards[index], [recipient])
   })
   await Promise.all(map)
   return true
@@ -68,7 +68,7 @@ async function requestShards (api:API, sender:ID, recipients:Array<ID>):Promise<
     if (!recipent) return
 
     const request = {type: 'request', text: 'shard requested'}
-    await send(api, sender, request, recipent)
+    await send(api, sender, request, [recipent])
   }))
   return true
 }
@@ -82,7 +82,7 @@ async function resendShards (api:API, sender:ID, recipient:ID):Promise<boolean> 
   await Promise.all(shards.map(async (shard:Message) => {
     const resend = shard.content
     resend.type = 'recovery'
-    await send(api, sender, resend, recipient)
+    await send(api, sender, resend, [recipient])
   }))
   return true
 }
