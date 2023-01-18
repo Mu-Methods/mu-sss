@@ -22,8 +22,10 @@ async function send(api:API, sender:ID, msg:any, recipients?:Array<ID>):Promise<
   }
 
   await api.db.create({
-    author: sender.public,
-    content: boxedMsg || msg,
+    value: {
+      author: sender.public,
+      content: boxedMsg || msg
+    }
   }, (err: any) => {
     if (err) throw err
   })

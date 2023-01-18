@@ -13,7 +13,7 @@ function createStubsAndSetup () {
    },
    query: (requestee, msgType) => {
     let msgs = returnDataStub.db.feed.map((msg) => {
-      const answer = keys.unbox(msg.content, requestee)
+      const answer = keys.unbox(msg.value.content, requestee)
       if (answer && answer.type === msgType) {
         message = {
           author: msg.author,
