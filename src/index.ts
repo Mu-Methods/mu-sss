@@ -1,4 +1,4 @@
-import { API, Message, ID } from './types'
+import { API, ID, Shard } from './types'
 const { 
   stringToBigInt,
   send,
@@ -57,7 +57,7 @@ async function shardAndSend(
     return {type: 'shard', text: shareToHexString(share)}
   })
   const map: Array<Promise<boolean>> = recipients.map(async (recipient, index): Promise<boolean> => {
-    return await send(api, sender, shards[index], recipient)
+    return await send(api, sender, shards[index], [recipient])
   })
   await Promise.all(map)
   return true
@@ -68,7 +68,7 @@ async function requestShards (api:API, sender:ID, recipients:Array<ID>):Promise<
     if (!recipent) return
 
     const request = {type: 'request', text: 'shard requested'}
-    await send(api, sender, request, recipent)
+    await send(api, sender, request, [recipent])
   }))
   return true
 }
@@ -79,17 +79,17 @@ async function requestShards (api:API, sender:ID, recipients:Array<ID>):Promise<
 //when returning a Promise<boolean> use a try-catch,
 async function resendShards (api:API, sender:ID, recipient:ID):Promise<boolean> {
   let shards = api.db.query(sender, 'shard')
-  await Promise.all(shards.map(async (shard:Message) => {
+  await Promise.all(shards.map(async (shard:Shard) => {
     const resend = shard.content
     resend.type = 'recovery'
-    await send(api, sender, resend, recipient)
+    await send(api, sender, resend, [recipient])
   }))
   return true
 }
 
 async function recoverAccount(api: API, sender:ID): Promise<bigint> {
-  let shares:Array<Message> = await api.db.query(sender, 'recovery')
-  shares = shares.map((msg:Message) => {
+  let shares:Array<Shard> = await api.db.query(sender, 'recovery')
+  shares = shares.map((msg:Shard) => {
     return hexStringToShare(msg.content.text)
   })
   return muShamir.recover(shares)

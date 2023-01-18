@@ -33,11 +33,19 @@ export interface ID {
 }
 
 export interface Message {
-  author: string;
-  backlink: string;
-  hash: string;
-  nonce: number | string;
+  key: string;
+  value: {
+    author: string;
+    backlink: string;
+    hash: string;
+    nonce: number | string;
+    timestamp: number;
+    content: Content;
+    signature: string;
+  };
   timestamp: number;
+}
+
+export interface Shard {
   content: Content;
-  signature: string;
 }

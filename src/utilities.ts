@@ -15,18 +15,19 @@ function logger(x:any, name:string, line:number) {
   console.log(x)
 }
 
-async function send(api:API, sender:ID, msg:any, recipient:ID):Promise<boolean> {
-  await new Promise((res, rej) => {
-    try {
-      const value = api.keys.box(msg, [recipient])
-      api.db.create({author: sender.public, content: value}, (err:any, msg:any) => {
-        if (err) rej(err)
-        if (msg) res(msg)
-      })
+async function send(api:API, sender:ID, msg:any, recipients?:Array<ID>):Promise<boolean> {
+  let boxedMsg:string = ''
+  if (recipients) {
+     boxedMsg = api.keys.box(msg, recipients)
+  }
 
-    } catch (e) {
-      rej(e)
+  await api.db.create({
+    value: {
+      author: sender.public,
+      content: boxedMsg || msg
     }
+  }, (err: any) => {
+    if (err) throw err
   })
   return true
 }
