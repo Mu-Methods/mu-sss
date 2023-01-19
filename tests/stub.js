@@ -26,7 +26,7 @@ function createStubsAndSetup () {
    }
  }
  const api = {
-   keys,
+   keyring,
    db,
  }
  return { returnDataStub, api, sss: plugin.init(api) }
