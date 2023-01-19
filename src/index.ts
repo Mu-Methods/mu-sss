@@ -1,4 +1,4 @@
-import { API, ID, Shard } from './types'
+import { API, ID, Message } from './types'
 const { 
   stringToBigInt,
   send,
@@ -69,7 +69,7 @@ async function getKeepers (api:API, sender:ID):Promise<Array<string> | boolean> 
   let msgs = api.db.query(sender, 'shard')
   console.log('msgs: ', msgs)
   if (msgs) {
-    return await msgs.map((msg:Shard) => {
+    return await msgs.map((msg: Message) => {
       return msg.value.content.keeper
     })  
   }
@@ -89,7 +89,7 @@ async function requestShards (api:API, sender:ID, recipients:Array<ID>):Promise<
 
 async function resendShards (api:API, sender:ID, recipient:ID):Promise<boolean> {
   let shards = api.db.query(sender, 'shard')
-  await Promise.all(shards.map(async (shard:Shard) => {
+  await Promise.all(shards.map(async (shard:Message) => {
     const resend = shard.value.content
     resend.type = 'recovery'
     await send(api, sender, resend, [recipient])
@@ -98,8 +98,8 @@ async function resendShards (api:API, sender:ID, recipient:ID):Promise<boolean> 
 }
 
 async function recoverAccount(api: API, sender:ID): Promise<bigint> {
-  let shares:Array<Shard> = await api.db.query(sender, 'recovery')
-  shares = shares.map((msg:Shard) => {
+  let shares:Array<Message> = await api.db.query(sender, 'recovery')
+  shares = shares.map((msg: Message) => {
     return hexStringToShare(msg.value.content.text)
   })
   return muShamir.recover(shares)
