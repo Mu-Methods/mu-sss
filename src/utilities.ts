@@ -18,7 +18,7 @@ function logger(x:any, name:string, line:number) {
 async function send(api:API, sender:ID, msg:any, recipients?:Array<ID>):Promise<boolean> {
   let boxedMsg:string = ''
   if (recipients) {
-     boxedMsg = api.keys.box(msg, recipients)
+     boxedMsg = api.keyring.box(msg, recipients)
   }
 
   await api.db.create({
