@@ -15,6 +15,7 @@ export const version = '0.0.1'
 
 export const manifest = {
   shardAndSend: 'async',
+  getKeepers: 'async',
   requestShards: 'async',
   resendShards: 'async',
   recoverAccount: 'async',
@@ -29,6 +30,7 @@ type tPoint = [bigint, bigint]
 export const init = (api:API) => {  
   return {
     shardAndSend: shardAndSend.bind(null, api),
+    getKeepers: getKeepers.bind(null, api),
     requestShards: requestShards.bind(null, api),
     resendShards: resendShards.bind(null, api),
     recoverAccount: recoverAccount.bind(null, api)
@@ -53,14 +55,25 @@ async function shardAndSend(
   } else {
     shares = muShamir.share(num, threshold, recipients.length)
   }
-  const shards = shares.map((share) => {
-    return {type: 'shard', text: shareToHexString(share)}
+  const shards = shares.map((share, index) => {
+    return {type: 'shard', text: shareToHexString(share), keeper: recipients[index].public}
   })
   const map: Array<Promise<boolean>> = recipients.map(async (recipient, index): Promise<boolean> => {
-    return await send(api, sender, shards[index], [recipient])
+    return await send(api, sender, shards[index], [recipient, sender])
   })
   await Promise.all(map)
   return true
+}
+
+async function getKeepers (api:API, sender:ID):Promise<Array<string> | boolean> {
+  let msgs = api.db.query(sender, 'shard')
+  console.log('msgs: ', msgs)
+  if (msgs) {
+    return await msgs.map((msg:Shard) => {
+      return msg.content.keeper
+    })  
+  }
+  return false
 }
 
 async function requestShards (api:API, sender:ID, recipients:Array<ID>):Promise<boolean> {
@@ -74,9 +87,6 @@ async function requestShards (api:API, sender:ID, recipients:Array<ID>):Promise<
 }
 
 
-//given a request-message resend the right shard back
-//need: the shard-message in reference.
-//when returning a Promise<boolean> use a try-catch,
 async function resendShards (api:API, sender:ID, recipient:ID):Promise<boolean> {
   let shards = api.db.query(sender, 'shard')
   await Promise.all(shards.map(async (shard:Shard) => {

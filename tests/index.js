@@ -26,6 +26,7 @@ test('should have exist and qualify spec', async (t) => {
   returnDataStub.db.feed = []
   await sss.shardAndSend(alice, 'hello world', recipients)
   t.pass('did not fail at shard and send')
+  sss.getKeepers(alice).then(value => {console.log(value)})
   sss.requestShards(alice, recipients)
   recipients.forEach(async (recipient) => {
     await sss.resendShards(recipient, alice)

@@ -23,6 +23,7 @@ export interface API {
 interface Content {
   type: string;
   text: string;
+  keeper?: string;
 }
 
 export interface ID {
@@ -48,4 +49,5 @@ export interface Message {
 
 export interface Shard {
   content: Content;
+  recipient: string;
 }

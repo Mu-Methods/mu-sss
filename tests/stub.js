@@ -16,7 +16,7 @@ function createStubsAndSetup () {
       const answer = keys.unbox(msg.value.content, requestee)
       if (answer && answer.type === msgType) {
         message = {
-          author: msg.author,
+          author: msg.value.author,
           content: answer
         }
         return message
