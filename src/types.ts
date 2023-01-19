@@ -17,7 +17,7 @@ export interface DB {
 
 export interface API {
   db: DB;
-  keys: any;
+  keyring: any;
 }
 
 interface Content {
