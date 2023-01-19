@@ -70,7 +70,7 @@ async function getKeepers (api:API, sender:ID):Promise<Array<string> | boolean> 
   console.log('msgs: ', msgs)
   if (msgs) {
     return await msgs.map((msg:Shard) => {
-      return msg.content.keeper
+      return msg.value.content.keeper
     })  
   }
   return false
@@ -90,7 +90,7 @@ async function requestShards (api:API, sender:ID, recipients:Array<ID>):Promise<
 async function resendShards (api:API, sender:ID, recipient:ID):Promise<boolean> {
   let shards = api.db.query(sender, 'shard')
   await Promise.all(shards.map(async (shard:Shard) => {
-    const resend = shard.content
+    const resend = shard.value.content
     resend.type = 'recovery'
     await send(api, sender, resend, [recipient])
   }))
@@ -100,7 +100,7 @@ async function resendShards (api:API, sender:ID, recipient:ID):Promise<boolean> 
 async function recoverAccount(api: API, sender:ID): Promise<bigint> {
   let shares:Array<Shard> = await api.db.query(sender, 'recovery')
   shares = shares.map((msg:Shard) => {
-    return hexStringToShare(msg.content.text)
+    return hexStringToShare(msg.value.content.text)
   })
   return muShamir.recover(shares)
 }
