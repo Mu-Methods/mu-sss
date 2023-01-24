@@ -5,29 +5,69 @@ const keys = require('ssb-keys')
 module.exports = {createStubsAndSetup}
 
 function createStubsAndSetup () {
- const returnDataStub = {db: { feed:[] }}
+ const returnDataStub = {db: { feed:[] }, self: {}}
+
  const db = {
-   create: (msg, cb) => {
-    if (msg) returnDataStub.db.feed.push(msg)
+   create: (opts, cb) => {
+    const message = {
+      author: opts.keys.public,
+      content: opts.content
+    }
+
+    const msg = keys.box(message, opts.recps.concat([opts.keys])) || message
+    returnDataStub.db.feed.push({
+      key: opts.keys.public,
+      value: msg
+    })
     return cb(undefined, msg)
    },
-   query: (requestee, msgType) => {
-    let msgs = returnDataStub.db.feed.map((msg) => {
-      const answer = keys.unbox(msg.value.content, requestee)
-      if (answer && answer.type === msgType) {
-        message = {
-          author: msg.value.author,
-          content: answer
-        }
-        return message
+
+   query: (...params) => {
+    let check = {}
+    for (let i = 0; i < params.length; i++) {
+      Object.assign(check, params[i])
+    }
+    msgs = []
+    returnDataStub.db.feed.forEach((msg, index) => {
+      const answer = keys.unbox(msg.value, returnDataStub.self)
+      if (answer && answer.content.type === check.type) {
+        msgs.push({
+          key: msg.key,
+          value: answer
+        })
       }
-    }).filter(msg => msg)
+    })
     return msgs
    }
  }
+
+ const where = (...params) => {
+    let ans = {}
+    for (let i = 0; i < params.length; i++) {
+      Object.assign(ans, params[i])
+    }
+    return ans
+   }
+
+ const and = (...params) => { 
+    let ans = {}
+    for (let i = 0; i < params.length; i++) {
+      Object.assign(ans, params[i])
+    }
+    return ans
+   } 
+
+  const type = (str) => { return { type: str } }
+
+  const author = (str) => { return { author: str } }
+
  const api = {
-   keyring,
+   keys,
    db,
+   where,
+   and,
+   type,
+   author
  }
  return { returnDataStub, api, sss: plugin.init(api) }
 }

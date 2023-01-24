@@ -1,4 +1,4 @@
-import { API, ID } from './types'
+import { API, SendOpts } from './types'
 
 module.exports = {
   stringToBigInt,
@@ -15,18 +15,8 @@ function logger(x:any, name:string, line:number) {
   console.log(x)
 }
 
-async function send(api:API, sender:ID, msg:any, recipients?:Array<ID>):Promise<boolean> {
-  let boxedMsg:string = ''
-  if (recipients) {
-     boxedMsg = api.keyring.box(msg, recipients)
-  }
-
-  await api.db.create({
-    value: {
-      author: sender.public,
-      content: boxedMsg || msg
-    }
-  }, (err: any) => {
+async function send(api:API, opts:SendOpts):Promise<boolean> {
+  await api.db.create(opts, (err: any) => {
     if (err) throw err
   })
   return true
