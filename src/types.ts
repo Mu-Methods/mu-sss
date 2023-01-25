@@ -17,19 +17,53 @@ export interface DB {
 
 export interface API {
   db: DB;
-  keys: any;
+  keyring: any;
+  where: Function;
+  and: Function;
+  type: Function;
+  author: Function;
 }
 
-interface Content {
+export interface Content {
   type: string;
   text: string;
+  keeper?: string;
+  kept?: string;
 }
 
 export interface ID {
-  curve: string,
-  public: string,
-  private: string,
-  id: string,
+  curve: string;
+  public: string;
+  private?: string;
+  id: string;
+}
+
+interface Opts {
+  feedFormat?: string;
+  keys?: ID;
+  encryptionFormat?: string;
+  encoding?: string;
+}
+
+export interface SendOpts extends Opts {
+  content: Content;
+  recps?: Array<ID>
+}
+
+export interface ShardOpts extends Opts {
+  threshold: number;
+  random: boolean;
+  secret: string;
+  recps: Array<ID>
+}
+
+export interface RequestOpts extends Opts{
+  recps: Array<ID>;
+  public: string; //public key
+}
+
+export interface ResendOpts extends Opts {
+  recp: ID;
 }
 
 export interface Message {
@@ -48,4 +82,5 @@ export interface Message {
 
 export interface Shard {
   content: Content;
+  recipient: string;
 }
