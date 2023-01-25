@@ -14,7 +14,10 @@ function createStubsAndSetup () {
       content: opts.content
     }
 
-    const msg = keys.box(message, opts.recps.concat([opts.keys])) || message
+    let msg = message
+    if (opts.recps) {
+      msg = keys.box(message, opts.recps.concat([opts.keys]))
+    }
     returnDataStub.db.feed.push({
       key: opts.keys.public,
       value: msg

@@ -15,12 +15,12 @@
     "@types/ssb-keys": "^7.2.0",
     "secret-stack": "^6.4.1",
     "ssb-caps": "^1.1.0",
+    "ssb-db2": "^6.3.2",
+    "ssb-keys": "^8.5.0",
     "tape": "^5.6.1",
     "typescript": "^4.9.3"
   },
   "dependencies": {
-    "mu-shamir": "^0.0.1",
-    "ssb-db2": "^6.3.2",
-    "ssb-keys": "^8.5.0"
+    "mu-shamir": "^0.0.1"
   }
 }
