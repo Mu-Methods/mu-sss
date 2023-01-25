@@ -1,6 +1,6 @@
 {
   "name": "mu-sss",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "plug-in for shamir secret sharing",
   "main": "build/index.js",
   "repository": "https://github.com/Mu-Methods/mu-sss.git",
