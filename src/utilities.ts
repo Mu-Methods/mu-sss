@@ -16,10 +16,12 @@ function logger(x:any, name:string, line:number) {
 }
 
 async function send(api:API, opts:SendOpts):Promise<boolean> {
-  await api.db.create(opts, (err: any) => {
-    if (err) throw err
+  return await new Promise((resolve, reject) => {
+    api.db.create(opts, (err: any) => {
+      if (err) reject(err)
+      else resolve(true)
+    })
   })
-  return true
 }
 
 function stringToBigInt (str: string):bigint {
