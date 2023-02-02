@@ -1,6 +1,7 @@
 import { API, ID, Message, ShardOpts, RequestOpts, ResendOpts} from './types'
 const { 
   stringToBigInt,
+  bigintToAscii,
   send,
   shareToHexString,
   hexStringToShare
@@ -18,7 +19,7 @@ export const manifest = {
   getKeepers: 'async',
   requestShards: 'async',
   resendShards: 'async',
-  recoverAccount: 'async',
+  recoverSecret: 'async',
 }
 
 /**
@@ -33,7 +34,7 @@ export const init = (api:API) => {
     getKeepers: getKeepers.bind(null, api),
     requestShards: requestShards.bind(null, api),
     resendShards: resendShards.bind(null, api),
-    recoverAccount: recoverAccount.bind(null, api)
+    recoverSecret: recoverSecret.bind(null, api)
   }
 }
 
@@ -116,9 +117,9 @@ async function resendShards (api:API, opts:ResendOpts):Promise<boolean> {
   return true
 }
 
-async function recoverAccount(api: API, publicKey:string): Promise<bigint> {
+async function recoverSecret(api: API, publicKey:string): Promise<string> {
   let shares:Array<Message> = await api.db.query(api.where(api.and(api.type('account#recovery')))).map((msg:Message) => {
     if (msg.value.content.kept === publicKey) return hexStringToShare(msg.value.content.text)
   })
-  return muShamir.recover(shares)
+  return bigintToAscii(muShamir.recover(shares))
 }
