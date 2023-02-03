@@ -71,7 +71,6 @@ test('should have exist and qualify spec', async (t) => {
   t.pass('did not fail at resending shards')
 
   returnDataStub.self = alice2
-  const result = await sss.recoverAccount(alice.public)
-  const returnedSecret = util.bigintToAscii(result)
-  t.equal('hello world', returnedSecret, 'should return secret from db')
+  const result = await sss.recoverSecret(alice.public)
+  t.equal('hello world', result, 'should return secret from db')
 })
