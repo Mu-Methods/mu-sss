@@ -7,7 +7,7 @@
   "author": "Mu Methods (ReneeSauce)",
   "scripts": {
     "compile": "tsc",
-    "prepublishOnly": "yarn tsc",
+    "prepublishOnly": "yarn compile",
     "test": "yarn compile && node tests/index.js"
   },
   "license": "MIT",
